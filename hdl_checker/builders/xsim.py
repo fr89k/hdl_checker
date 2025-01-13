@@ -22,6 +22,7 @@ import shutil
 import tempfile
 from typing import Iterable, Mapping, Optional
 
+from hdl_checker.exceptions import SanityCheckError
 from hdl_checker.diagnostics import BuilderDiag, DiagType
 from hdl_checker.parsers.elements.identifier import Identifier
 from hdl_checker.path import Path
@@ -124,7 +125,10 @@ class XSIM(BaseBuilder):
         stdout = runShellCommand(
             ["xvhdl", "--nolog", "--version"], cwd=self._work_folder
         )
-        self._version = re.findall(r"^Vivado Simulator\s+([\d\.]+)", stdout[0])[0]
+        versionParsed = re.findall(r"^Vivado Simulator\s+v?([\d\.]+)", stdout[0])
+        if len(versionParsed) < 1:
+            raise SanityCheckError(self.builder_name, "Could not parse Vivado version string")
+        self._version = versionParsed[0]
         self._logger.info(
             "xvhdl version string: '%s'. Version number is '%s'",
             stdout[:-1],
